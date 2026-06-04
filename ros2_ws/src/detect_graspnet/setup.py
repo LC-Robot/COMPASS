@@ -12,9 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # ======== vvv 【核心修正 1】添加 srv 文件的安装规则 vvv ========
         (os.path.join('share', package_name, 'srv'), glob('srv/*.srv')),
-        # ======== ^^^ 【核心修正 1】添加 srv 文件的安装规则 ^^^ ========
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,9 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # ======== vvv 【核心修正 2】修正 entry_point 路径 vvv ========
             'grasp_server = detect_graspnet.grasp_server_node:main',
-            # ======== ^^^ 【核心修正 2】修正 entry_point 路径 ^^^ ========
         ],
     },
 )

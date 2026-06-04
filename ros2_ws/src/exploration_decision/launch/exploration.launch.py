@@ -1,7 +1,6 @@
 import os
-import yaml # <--- 新增 1: 导入 PyYAML 库
+import yaml
 from launch import LaunchDescription
-# <--- 新增 2: 导入 OpaqueFunction --- >
 from launch.actions import DeclareLaunchArgument, GroupAction, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PythonExpression
@@ -53,23 +52,14 @@ def moveit_params_for_launch(moveit_config):
     return params
 
 
-# <--- 新增 3: 定义一个函数来加载、解析并创建依赖于YAML的节点 --->
 def load_nodes_based_on_yaml(context, *args, **kwargs):
-    """
-    这个函数会在LaunchConfiguration被解析后执行。
-    它负责：
-    1. 读取 collision_objects_yaml_path 指定的YAML文件。
-    2. 从中提取 target_box 的位置。
-    3. 创建并返回所有依赖于该位置的节点列表。
-    """
-    # 首先，获取所有需要的LaunchConfiguration的真实值
+    """Create planner nodes that depend on launch-time scene YAML values."""
     collision_objects_yaml_path = LaunchConfiguration('collision_objects_yaml_path').perform(context)
     method = LaunchConfiguration('method').perform(context)
     run_id = int(LaunchConfiguration('run_id').perform(context))
     level = int(LaunchConfiguration('level').perform(context))
     scene = int(LaunchConfiguration('scene').perform(context))
 
-    # MoveIt的配置也需要在这里重新获取，因为它在函数外部
     moveit_config = (
         MoveItConfigsBuilder("moveit_resources_panda")
         .robot_description(
@@ -83,9 +73,8 @@ def load_nodes_based_on_yaml(context, *args, **kwargs):
         .to_moveit_configs()
     )
 
-    # 从YAML文件中读取 target_params
     try:
-        print(f"[Launch] callback: 正在从以下路径加载目标位置: {collision_objects_yaml_path}")
+        print(f"[Launch] Loading target position from: {collision_objects_yaml_path}")
         with open(collision_objects_yaml_path, 'r') as f:
             data = yaml.safe_load(f)
             position = data['prims']['target_box']['position']
@@ -96,28 +85,21 @@ def load_nodes_based_on_yaml(context, *args, **kwargs):
                     'z': float(position[2])
                 }
             }
-        print(f"[Launch] callback: 成功加载目标位置: x={target_params['target']['x']}, y={target_params['target']['y']}, z={target_params['target']['z']}")
+        print(f"[Launch] Loaded target position: x={target_params['target']['x']}, y={target_params['target']['y']}, z={target_params['target']['z']}")
     except (FileNotFoundError, KeyError, IndexError, yaml.YAMLError) as e:
-        print(f"[Launch] callback: 错误: 无法从YAML加载目标位置: {e}")
-        print("[Launch] callback: 将使用默认的目标位置。")
-        # 提供一个备用的默认值，以防文件读取失败
+        print(f"[Launch] Failed to load target position from YAML: {e}")
+        print("[Launch] Falling back to the default target position.")
         target_params = {'target': {'x': 0.5, 'y': 0.0, 'z': 0.0375}}
 
-    # =========================================================================
-    # == 现在，创建所有依赖 target_params 的节点
-    # =========================================================================
-
-    # 创建一个通用的参数字典，可以被多个规划器节点共享
     common_planner_params = {
         'world_frame': 'panda_link0', 
         'planning_group': 'panda_arm',
         'run_id': run_id,
         'level': level,
         'scene': scene,
-        **target_params # 将动态加载的 target_params 合并进来
+        **target_params
     }
     
-    # 规划器节点组 (与之前逻辑相同)
     planner_nodes = GroupAction(
         actions=[
             Node(
@@ -175,16 +157,14 @@ def load_nodes_based_on_yaml(context, *args, **kwargs):
         ]
     )
     
-    # 引导发布节点
     guide_publisher_node = Node(
         package='task_guide_publisher',
         executable='guide_publisher_node',
         name='task_guide_publisher',
         output='screen',
-        parameters=[target_params] # 这里也使用动态加载的参数
+        parameters=[target_params]
     )
 
-    # OpaqueFunction 必须返回一个节点/动作的列表
     return [planner_nodes, guide_publisher_node]
 
 
@@ -193,9 +173,6 @@ def generate_launch_description():
     compass_root = os.environ.get("COMPASS_ROOT", os.path.expanduser("~/ros_workspace/COMPASS"))
     default_collision_objects_yaml_path = os.path.join(compass_root, "config", "level1", "1.yaml")
     
-    # =================================================================================
-    # == 1. 声明所有启动参数 (这部分保持不变)
-    # =================================================================================
     declared_arguments = [
         DeclareLaunchArgument('method', default_value='RRT'),
         DeclareLaunchArgument('run_id', default_value='3'),
@@ -212,9 +189,6 @@ def generate_launch_description():
         )
     ]
     
-    # =================================================================================
-    # == 2. 加载MoveIt配置 (只加载一次，然后传递给OpaqueFunction)
-    # =================================================================================
     moveit_config = (
         MoveItConfigsBuilder("moveit_resources_panda")
         .robot_description(
@@ -227,10 +201,6 @@ def generate_launch_description():
         .sensors_3d(file_path="config/sensors_kinect_pointcloud.yaml")
         .to_moveit_configs()
     )
-    
-    # =================================================================================
-    # == 3. 定义所有不依赖于动态参数的节点 (这部分基本保持不变)
-    # =================================================================================
     
     moveit_node_params = moveit_params_for_launch(moveit_config)
 
@@ -268,18 +238,12 @@ def generate_launch_description():
         parameters=[{'method_name': LaunchConfiguration('method'), 'run_id': LaunchConfiguration('run_id'), 'level': LaunchConfiguration('level'), 'scene': LaunchConfiguration('scene')}]
     )
 
-    # <--- 修改 4: 创建 OpaqueFunction 动作 --->
-    # 这个动作会调用我们的函数来生成依赖于YAML的节点
     load_dynamic_nodes_action = OpaqueFunction(
         function=load_nodes_based_on_yaml,
         condition=IfCondition(LaunchConfiguration("use_planners")),
     )
 
-    # =================================================================================
-    # == 5. 组合并返回LaunchDescription
-    # =================================================================================
     nodes_to_start = [
-        # 所有不依赖YAML的静态节点
         move_group_node,
         rviz_node,
         robot_state_publisher,
@@ -292,9 +256,6 @@ def generate_launch_description():
         motion_planner_server_node,
         octomap_server_node,
         exploration_coordinator_node,
-        
-        # <--- 修改 5: 添加 OpaqueFunction 动作 --->
-        # 它会负责启动 planner_nodes 和 guide_publisher_node
         load_dynamic_nodes_action,
     ]
     
