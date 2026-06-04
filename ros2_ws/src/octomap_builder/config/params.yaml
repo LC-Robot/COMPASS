@@ -1,7 +1,8 @@
 octomap_builder_node:
   ros__parameters:
     world_frame: "panda_link0"
-    pointcloud_topic: "/camera/depth/points"
+    cloud_in_topic: "/camera_pointcloud"
     resolution: 0.05
     max_range: 5.0
+    min_range: 0.1
     voxel_filter_size: 0.02

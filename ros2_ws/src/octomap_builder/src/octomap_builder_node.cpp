@@ -11,16 +11,14 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <memory> // For std::make_shared
+#include <memory>
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 
 class OctomapBuilder : public rclcpp::Node {
 public:
-    // 构造函数接受 NodeOptions，以便处理 use_sim_time 等参数
     explicit OctomapBuilder(const rclcpp::NodeOptions & options) 
         : rclcpp::Node("octomap_builder_node", options), tree_(0.05) {
         
-        // 1. 声明并获取所有参数
         this->declare_parameter<std::string>("world_frame", "world");
         this->declare_parameter<double>("resolution", 0.05);
         this->declare_parameter<double>("max_range", 5.0);
@@ -37,15 +35,11 @@ public:
         std::string cloud_topic_name;
         this->get_parameter("cloud_in_topic", cloud_topic_name);
         
-        // 初始化八叉树
         tree_.setResolution(resolution_);
         
-        // 初始化 TF2 Buffer 和 Listener
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-        // 初始化发布者和订阅者
-        // 使用兼容性更强的 SystemDefaultsQoS()
         auto qos_settings = rclcpp::SystemDefaultsQoS(); 
         cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             cloud_topic_name,
@@ -56,7 +50,6 @@ public:
         binary_map_pub_ = this->create_publisher<octomap_msgs::msg::Octomap>("octomap_binary", qos_settings);
         filtered_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_cloud", qos_settings);
         
-        // 设置参数动态回调
         param_callback_handle_ = this->add_on_set_parameters_callback(
             std::bind(&OctomapBuilder::reconfigureCallback, this, std::placeholders::_1));
         
@@ -66,7 +59,6 @@ public:
     }
 
 private:
-    // 参数动态更新回调
     rcl_interfaces::msg::SetParametersResult reconfigureCallback(const std::vector<rclcpp::Parameter> &parameters) {
         rcl_interfaces::msg::SetParametersResult result;
         result.successful = true;
@@ -89,35 +81,24 @@ private:
         return result;
     }
 
-    // 点云数据处理回调
     void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr cloud_msg) {
-        // RCLCPP_INFO(this->get_logger(), "Received a point cloud with frame_id: '%s'", cloud_msg->header.frame_id.c_str());
-    
         try {
             if (cloud_msg->header.frame_id.empty()) {
                 RCLCPP_WARN(this->get_logger(), "PointCloud has empty frame_id! Skipping.");
                 return;
             }
     
-            // 步骤1: 查找坐标变换
             geometry_msgs::msg::TransformStamped transform;
-            // RCLCPP_INFO(this->get_logger(), "Looking up transform from '%s' to '%s'", cloud_msg->header.frame_id.c_str(), world_frame_.c_str());
             
             transform = tf_buffer_->lookupTransform(
                 world_frame_, cloud_msg->header.frame_id,
-                tf2::TimePointZero,      // 使用最新的可用变换，增强鲁棒性
-                tf2::durationFromSec(1.0) // 等待1秒，给TF buffer时间
+                tf2::TimePointZero,
+                tf2::durationFromSec(1.0)
             );
     
-            // RCLCPP_INFO(this->get_logger(), "Transform lookup successful!");
-    
-            // 步骤2: 将点云转换到世界坐标系 (让TF系统处理所有旋转和平移)
             sensor_msgs::msg::PointCloud2 transformed_cloud;
             tf2::doTransform(*cloud_msg, transformed_cloud, transform);
             
-            // RCLCPP_INFO(this->get_logger(), "Point cloud transformed to world frame.");
-    
-            // 步骤3: 点云滤波处理
             pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZ>);
             pcl::fromROSMsg(transformed_cloud, *pcl_cloud);
             
@@ -126,12 +107,10 @@ private:
                 return;
             }
             
-            // 移除NaN无效点
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_no_nan(new pcl::PointCloud<pcl::PointXYZ>);
             std::vector<int> indices;
             pcl::removeNaNFromPointCloud(*pcl_cloud, *cloud_no_nan, indices);
             
-            // 体素滤波降采样
             pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
             voxel_filter.setInputCloud(cloud_no_nan);
             voxel_filter.setLeafSize(voxel_size_, voxel_size_, voxel_size_);
@@ -143,37 +122,29 @@ private:
                 return;
             }
 
-            // 发布滤波后的点云以供调试
             sensor_msgs::msg::PointCloud2 filtered_msg;
             pcl::toROSMsg(*filtered_cloud, filtered_msg);
             filtered_msg.header.stamp = this->get_clock()->now();
             filtered_msg.header.frame_id = world_frame_;
             filtered_cloud_pub_->publish(filtered_msg);
 
-            // 步骤4: 更新OctoMap
-            // 获取传感器在世界坐标系中的原点
             octomap::point3d sensor_origin(
                 transform.transform.translation.x,
                 transform.transform.translation.y,
                 transform.transform.translation.z
             );
 
-            // 将PCL点云转换为OctoMap点云
             octomap::Pointcloud octomap_cloud;
             for (const auto& point : *filtered_cloud) {
                 octomap_cloud.push_back(point.x, point.y, point.z);
             }
             
-            // 插入点云到八叉树
             tree_.insertPointCloud(octomap_cloud, sensor_origin, max_range_);
             tree_.updateInnerOccupancy();
 
-            // RCLCPP_INFO(this->get_logger(), "Updating and publishing maps...");
             publishMaps();
-            // RCLCPP_INFO(this->get_logger(), "Maps published.");
             
         } catch (const tf2::TransformException &ex) {
-            // 这是最关键的错误捕获，会告诉你TF查找失败的具体原因
             RCLCPP_ERROR(this->get_logger(), "Could not transform '%s' to '%s': %s",
                          cloud_msg->header.frame_id.c_str(), world_frame_.c_str(), ex.what());
         } catch (const std::exception& e) {
@@ -181,7 +152,6 @@ private:
         }
     }
 
-    // 发布地图
     void publishMaps() {
         octomap_msgs::msg::Octomap full_map_msg;
         full_map_msg.header.frame_id = world_frame_;
@@ -203,7 +173,6 @@ private:
         }
     }
 
-    // 成员变量
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
@@ -214,7 +183,6 @@ private:
     
     octomap::OcTree tree_;
     
-    // 参数
     std::string world_frame_;
     double resolution_;
     double max_range_;
@@ -222,11 +190,9 @@ private:
     double voxel_size_;
 };
 
-// 主函数
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
 
-    // 明确设置节点选项，允许从命令行或launch文件覆盖参数
     rclcpp::NodeOptions options;
     options.automatically_declare_parameters_from_overrides(true);
 
