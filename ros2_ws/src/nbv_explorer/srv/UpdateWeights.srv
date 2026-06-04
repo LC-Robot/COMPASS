@@ -1,0 +1,9 @@
+# Request
+# 使用点云来高效地传递大量带权重的点
+# 点云的每个点都有 x, y, z 和 intensity 字段
+# 我们将用 intensity 来表示权重 (0.0 to infinity)
+
+sensor_msgs/PointCloud2 weighted_points
+---
+# Response
+bool success

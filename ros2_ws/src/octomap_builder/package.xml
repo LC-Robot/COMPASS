@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>octomap_builder</name>
+  <version>0.1.0</version>
+  <description>A 3D OctoMap building node using PointCloud2.</description>
+  <maintainer email="le@example.com">le</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 将依赖分为构建时(build)和执行时(exec) -->
+  <!-- 对于C++包，大部分依赖两者都需要 -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
+  
+  <!-- pcl_conversions 是用于在ROS消息和PCL数据结构之间转换的库 -->
+  <depend>pcl_conversions</depend>
+  
+  <!-- OctoMap 相关依赖 -->
+  <depend>octomap</depend>
+  <depend>octomap_msgs</depend>
+  
+  <!-- octomap_ros 不是必须的，因为我们没有直接使用它的转换函数，但保留也无妨 -->
+  <!-- <depend>octomap_ros</depend> --> 
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

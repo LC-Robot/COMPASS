@@ -1,0 +1,253 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <!-- 一个基础的地面 -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- 环境光 -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <model name="target_box">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0.5 0.15 0.05 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>0.1 0.1 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>0.1 0.1 0.1</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 您定义的长方体模型 -->
+    <model name="my_custom_box">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0.5 0.15 0.3 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>0.5 0.3 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>0.5 0.3 0.1</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="my_custom_box_3">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0.25 0.15 0.15 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>0.05 0.3 0.3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>0.05 0.3 0.3</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_1">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0 0.3 0.5 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>0.05 0.05 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>0.05 0.05 1.0</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_1">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0 1.0 0.5 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>3.0 0.2 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>3.0 0.2 1.0</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_2">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>0 -1.0 0.5 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>3.0 0.2 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>3.0 0.2 1.0</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_3">
+      <!-- 设置长方体的位置和姿态 -->
+      <!-- 格式: x y z roll pitch yaw -->
+      <!-- x=2米, y=-1米, z=0.5米 (因为长方体高度为1米，为了让它恰好在地面上，z轴坐标为其高度的一半) -->
+      <pose>-1.0 0.0 0.5 0 0 0</pose>
+      <static>true</static> <!-- 设置为true使其固定不动，设置为false则会受物理引擎影响 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 -->
+              <!-- 格式: length width height -->
+              <!-- 长度=0.8米, 宽度=1.5米, 高度=1米 -->
+              <size>0.2 1.8 1.0</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <!-- 设置长方体的尺寸 (与collision保持一致) -->
+              <size>0.2 1.8 1.0</size>
+            </box>
+          </geometry>
+          <!-- 设置长方体的外观颜色 -->
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0 0 1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

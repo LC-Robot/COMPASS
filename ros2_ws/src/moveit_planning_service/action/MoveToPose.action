@@ -1,0 +1,10 @@
+# Goal: 我们希望机器人移动到的目标姿态
+geometry_msgs/PoseStamped target_pose
+---
+# Result: 最终的执行结果
+bool success
+string message
+---
+# Feedback: 在执行过程中可以周期性地发送反馈 (可选，这里我们暂时不用)
+
+  

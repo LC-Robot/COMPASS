@@ -1,0 +1,45 @@
+# Build and install products
+build/
+install/
+log/
+*/build/
+*/install/
+*/log/
+
+# Runtime logs and generated outputs
+output.txt
+isaacsim_output.txt
+rrt_explorer_node.txt
+*.log
+*.bag
+*.db3
+
+# Experiment outputs and local caches
+experiments/
+.thumbs/
+assets/.thumbs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editor and local environment files
+.vscode/
+*.code-workspace
+.env
+
+# Large local artifacts. Keep a small documented download script or link instead.
+*.pt
+*.pth
+*.onnx
+*.zip
+*.tar
+ros2_ws/src/detect_graspnet/detect_graspnet/graspnet-baseline/
+ros2_ws/src/detect_graspnet/detect_graspnet/graspnetAPI/
+ros2_ws/src/detect_graspnet/detect_graspnet/logs/
+ros2_ws/src/detect_graspnet/detect_graspnet/detect_images/
+
+# Isaac/Omniverse generated metadata
+*.bak
+*.tmp

@@ -1,0 +1,11 @@
+# --- Request ---
+# 客户端可以指定要抓取什么物体
+string target_class
+---
+# --- Response ---
+# 返回一个包含所有抓取信息的数组
+# data[0]: detect_flag (1.0 for success, 0.0 for failure)
+# data[1:4]: position (x, y, z)
+# data[4:8]: rotation (w, x, y, z)
+# data[8]: width
+float64[] grasp_data

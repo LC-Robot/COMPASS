@@ -1,0 +1,24 @@
+rrt_explorer_node:
+  ros__parameters:
+    # 在这里放入你代码中声明的所有参数
+    world_frame: "panda_link0"
+    planning_group: "panda_arm"
+    camera_link_name: "realsense_camera_world" # 确认这个link在你的URDF中存在
+    frontier_cluster_distance: 0.5
+    viewpoint_generation_radius: 0.8
+    min_cluster_size: 10
+    # ... 其他所有参数 ...
+
+    rrt:
+      max_iterations: 40
+      extension_range: 0.3
+
+    bounds:
+      min_x: -1.0
+      max_x: 1.0
+      min_y: -1.0
+      max_y: 1.0
+      min_z: 0.15
+      max_z: 1.0
+    
+    # ... etc

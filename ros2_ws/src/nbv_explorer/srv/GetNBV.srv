@@ -1,0 +1,12 @@
+# Request
+uint8 EXPLORE_FULL=0
+uint8 EXPLORE_AROUND=1
+uint8 EXPLORE_WRIST=2
+
+uint8 mode            # 使用上面的常量来指定探索模式
+float64 max_distance  # 用于EXPLORE_AROUND模式
+---
+# Response
+bool success
+geometry_msgs/PoseStamped nbv
+string message
