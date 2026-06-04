@@ -52,8 +52,6 @@ def moveit_params_for_launch(moveit_config):
 
 
 def generate_launch_description():
-
-    # Command-line arguments
     ros2_control_hardware_type = DeclareLaunchArgument(
         "ros2_control_hardware_type",
         default_value="isaac",
@@ -87,15 +85,8 @@ def generate_launch_description():
         .to_moveit_configs()
     )
 
-    path = os.path.join(
-                get_package_share_directory("moveit_resources_panda_moveit_config"),
-                "config/sensors_kinect_pointcloud.yaml",
-            )
-    print("path:", path)
-
     moveit_node_params = moveit_params_for_launch(moveit_config)
 
-    # Start the actual move_group node/action server
     move_group_node = Node(
         package="moveit_ros_move_group",
         executable="move_group",
@@ -104,7 +95,6 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", "info"],
     )
 
-    # RViz
     rviz_config_file = os.path.join(
         get_package_share_directory("isaac_panda"),
         "config",
@@ -126,7 +116,6 @@ def generate_launch_description():
         ],
     )
 
-    # Static TF
     world2robot_tf_node = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -151,7 +140,6 @@ def generate_launch_description():
         ],
     )
 
-    # Publish TF
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -160,7 +148,6 @@ def generate_launch_description():
         parameters=[moveit_config.robot_description],
     )
 
-    # ros2_control using FakeSystem as hardware
     ros2_controllers_path = os.path.join(
         get_package_share_directory("moveit_resources_panda_moveit_config"),
         "config",

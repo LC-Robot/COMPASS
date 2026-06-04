@@ -11,7 +11,7 @@ from pathlib import Path
 
 try:
     from isaacsim import SimulationApp
-except:
+except ImportError:
     from omni.isaac.kit import SimulationApp
 
 
@@ -100,10 +100,7 @@ def spin_ros_node_in_thread(node):
 
 
 def gripper_action(action_type, arm, world):
-    """
-    控制夹爪开合，并等待动作完成。
-    """
-
+    """Set the Panda gripper target opening."""
     lfinger_indices = arm.get_dof_index("panda_finger_joint1")
     rfinger_indices = arm.get_dof_index("panda_finger_joint2")
     
@@ -120,25 +117,6 @@ def gripper_action(action_type, arm, world):
         joint_indices=np.array([lfinger_indices, rfinger_indices])
     )
 
-    # # 持续几帧来设置目标，以确保它被物理引擎捕获
-    # for _ in range(10):
-    #     arm.set_joint_position_targets(
-    #         positions=target_positions,
-    #         joint_indices=np.array([lfinger_indices, rfinger_indices])
-    #     )
-    #     world.step(render=True)
-    
-    # # 等待夹爪到达目标位置
-    # start_time = world.current_time
-    # timeout = 5.0 # 5秒超时
-    # while world.current_time - start_time < timeout:
-    #     world.step(render=True)
-    #     current_positions = arm.get_joint_positions(joint_indices=np.array([lfinger_indices, rfinger_indices]))
-    #     if np.allclose(current_positions, target_positions, atol=0.005):
-    #         print(f"Gripper action '{action_type}' completed successfully.")
-    #         return
-    # print(f"Warning: Gripper action '{action_type}' timed out.")
-
 
 FRANKA_STAGE_PATH = "/Franka"
 COMPASS_ROOT = Path(os.environ.get("COMPASS_ROOT", Path(__file__).resolve().parents[4]))
@@ -146,7 +124,6 @@ FRANKA_USD_PATH = os.environ.get("FRANKA_USD_PATH", str(COMPASS_ROOT / "assets" 
 BANANA_USD_PATH = os.environ.get("BANANA_USD_PATH", str(COMPASS_ROOT / "assets" / "banana.usd"))
 DEFAULT_SCENE_YAML_PATH = str(COMPASS_ROOT / "config" / "level1" / "1.yaml")
 
-# GROUND_PLANE_PATH = "/World/groundPlane" # Path managed by world.scene now
 GRAPH_PATH = "/ActionGraph"
 ISAAC_HEADLESS = env_flag("ISAAC_HEADLESS", False)
 ISAAC_RENDER = env_flag("ISAAC_RENDER", not ISAAC_HEADLESS)
@@ -160,8 +137,6 @@ try:
 
     simulation_app = SimulationApp(CONFIG)
 
-    isaac_sim_ge_4_5_version = True
-
     from isaacsim.core.version import get_version
 
     is_legacy_isaacsim = len(get_version()[2]) == 4
@@ -170,35 +145,26 @@ try:
     from isaacsim.core.utils.prims import set_targets  # noqa E402
     from isaacsim.core.utils import (  # noqa E402
         extensions,
-        prims,
-        rotations,
         stage,
         viewports,
     )
 
-    from isaacsim.storage.native import nucleus
-
-    from pxr import Gf, UsdGeom  # noqa E402 # Gf is used for rotation
     import omni.graph.core as og  # noqa E402
-    import omni
 
-    from isaacsim.core.api.objects import DynamicCuboid, VisualCuboid
+    from isaacsim.core.api.objects import VisualCuboid
     from isaacsim.core.utils.stage import add_reference_to_stage
-    from isaacsim.core.prims import RigidPrim, GeometryPrim, XFormPrim
+    from isaacsim.core.prims import RigidPrim, GeometryPrim
     from isaacsim.core.api.materials import PhysicsMaterial
     from isaacsim.core.utils.prims import create_prim
     from isaacsim.core.prims import Articulation
     from isaacsim.core.api.robots import Robot
 
-    # RMPflow
     from isaacsim.robot_motion.motion_generation.lula import RmpFlow
     from isaacsim.robot_motion.motion_generation.interface_config_loader import (
         load_supported_motion_policy_config,
     )
     from isaacsim.robot_motion.motion_generation.articulation_motion_policy import ArticulationMotionPolicy
 
-
-    # utils
     from utils.camera_utils import setup_camera, setup_camera_publishers, cleanup_camera_pose_publisher
 
     # Enable Isaac's ROS2 bridge before creating the script-local rclpy context.
@@ -249,7 +215,6 @@ try:
     ros_thread = threading.Thread(target=spin_ros_node_in_thread, args=(ros_subscriber_node,), daemon=True)
     ros_thread.start()
 
-    # --- Using World Class ---
     world = World(stage_units_in_meters=1.0) 
 
     viewports.set_camera_view(eye=np.array([1.2, 1.2, 0.8]), target=np.array([0, 0, 0.5]))
@@ -257,7 +222,6 @@ try:
     world.scene.add_default_ground_plane()
 
     add_reference_to_stage(usd_path=FRANKA_USD_PATH, prim_path=FRANKA_STAGE_PATH)
-    # 获取对机械臂关节的直接API访问权限
     arm = Articulation(prim_paths_expr="/Franka", name="Franka")
     my_franka = world.scene.add(Robot(prim_path="/Franka", name="Franka"))
 
@@ -273,7 +237,6 @@ try:
         print("ROS_DOMAIN_ID environment variable is not set. Setting value to 0")
         ros_domain_id = 0
 
-    # --- Action Graph (Remains the same logic) ---
     og_keys_set_values = [
         ("Context.inputs:domain_id", ros_domain_id),
         ("ArticulationController.inputs:robotPath", FRANKA_STAGE_PATH),
@@ -317,14 +280,12 @@ try:
         },
     )
 
-    # --- Set targets for remaining nodes ---
     set_targets(
             prim=stage.get_current_stage().GetPrimAtPath("/ActionGraph/PublishJointState"),
             attribute="inputs:targetPrim",
             target_prim_paths=[FRANKA_STAGE_PATH],
         )
 
-    # 添加灯光
     light_prim = create_prim("/DomeLight", "DomeLight")
     light_prim.GetAttribute("inputs:intensity").Set(1000)
 
@@ -366,25 +327,24 @@ try:
         banana_target_position = np.array([[0.5, 0.5, 0.05]])
         banana_target_orientation = np.array([[1.0, 0.0, 0.0, 0.0]])
 
-    add_reference_to_stage(usd_path = BANANA_USD_PATH, prim_path = "/World/Banana1")
+    add_reference_to_stage(usd_path=BANANA_USD_PATH, prim_path="/World/Banana1")
     Banana_Rigid = RigidPrim(
-        prim_paths_expr = "/World/Banana1",
-        name = "Banana",
-        positions = banana_target_position,
-        scales = np.array([[0.01, 0.01, 0.01]]),
-        orientations = banana_target_orientation,
-        masses = np.array([0.02])
+        prim_paths_expr="/World/Banana1",
+        name="Banana",
+        positions=banana_target_position,
+        scales=np.array([[0.01, 0.01, 0.01]]),
+        orientations=banana_target_orientation,
+        masses=np.array([0.02])
     )
     GEOMETRY_BANANA1_PATH = "/World/Banana1/_11_banana"
     Banana_Geometry = GeometryPrim(
-        prim_paths_expr = GEOMETRY_BANANA1_PATH,
-        name = "banana_mesh",
-        collisions = [True],
-        scales = np.array([[1.0, 1.0, 1.0]]),
+        prim_paths_expr=GEOMETRY_BANANA1_PATH,
+        name="banana_mesh",
+        collisions=[True],
+        scales=np.array([[1.0, 1.0, 1.0]]),
     )
     Banana_Geometry.set_collision_approximations(["convexDecomposition"])
 
-    # 设置所有抓取物体的PhysicsMaterial
     Cardbox_PhysicsMaterial = PhysicsMaterial(
         prim_path="/World/Physics_Material", 
         name="physics_material",
@@ -393,7 +353,6 @@ try:
     )
     Banana_Geometry.apply_physics_materials(Cardbox_PhysicsMaterial)
 
-    # 设置RmpFlow
     rmp_config = load_supported_motion_policy_config("Franka", "RMPflow")
 
     print("RMP Config:", rmp_config)
@@ -409,20 +368,17 @@ try:
         rmpflow.add_obstacle(obstacle)
         print(f"Added {obstacle.name} to RMPflow obstacles.")
 
-    # Run app update for multiple frames to re-initialize the ROS action graph after setting new prim inputs
     simulation_app.update()
     simulation_app.update()
 
-    # 设置相机
     camera = setup_camera()
     approx_freq = 30
     setup_camera_publishers(camera, approx_freq, context=ros_context)
 
     render_frame = ISAAC_RENDER
 
-    # Reset the world before starting the main loop
     world.reset()
-    simulation_app.update() # Ensure reset state is rendered
+    simulation_app.update()
 
     # Keep the simulated gripper open at startup. The upstream Panda hand
     # ros2_control config initializes finger joints at 0.0, which is closed.
@@ -430,9 +386,6 @@ try:
         gripper_action("open", arm, world)
         world.step(render=render_frame)
 
-    # --- Simulation Loop using World ---
-    # No need for simulation_context.play() / stop()
-    # --- 主循环 ---
     step_count = 0
     while simulation_app.is_running():
 
@@ -442,7 +395,6 @@ try:
             print(f"Reached ISAAC_MAX_STEPS={ISAAC_MAX_STEPS}. Exiting Isaac Sim loop.")
             break
 
-        # --- 检查标志位并切换控制模式 ---
         if GRASP_NOW:
             if TARGET_GRASP_DATA is None:
                 print("ERROR: GRASP_NOW was triggered, but TARGET_GRASP_DATA is None.")
@@ -451,13 +403,11 @@ try:
             grasp_success = False
             grasp_lift_count = 0
 
-            # 闭合夹爪
             print("Executing gripper close action via Isaac Sim API...")
             for i in range(50):
                 gripper_action("close", arm, world)
                 world.step(render=render_frame)
 
-            # 移动到放置位置
             target_position = np.array([banana_target_position[0][0], banana_target_position[0][1], 0.13])
             target_orientation = np.array([0.70711, 0.0, 0.70711, 0.0])
 
@@ -499,24 +449,19 @@ try:
             simulation_app.close()
             
         else:
-            # 平时：保持ROS控制器启用
             og.Controller.set(
                 og.Controller.attribute(f"{GRAPH_PATH}/OnImpulseEvent.state:enableImpulse"), True
             )
 
 finally:
-
-    # 步骤 1: 通知ROS线程退出
     SHUTDOWN_EVENT.set()
     
-    # 步骤 2: 等待ROS线程完全结束
     if ros_thread and ros_thread.is_alive():
         print("Waiting for ROS thread to join...")
         ros_thread.join(timeout=2.0)
         if ros_thread.is_alive():
             print("Warning: ROS thread did not join in time.")
 
-    # 步骤 3: 现在可以安全地关闭 rclpy
     if ros_context is not None and rclpy.ok(context=ros_context):
         print("Shutting down rclpy.")
         rclpy.shutdown(context=ros_context)
@@ -524,10 +469,6 @@ finally:
     if "cleanup_camera_pose_publisher" in globals():
         cleanup_camera_pose_publisher()
     
-    # 步骤 4: 关闭 Isaac Sim
     if simulation_app:
         print("Closing Isaac Sim application.")
         simulation_app.close()
-    # =============================================================
-    # ================== ^^^ 健壮的清理逻辑 ^^^ ====================
-    # =============================================================
