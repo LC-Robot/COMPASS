@@ -7,30 +7,24 @@
   <maintainer email="le@example.com">le</maintainer>
   <license>Apache-2.0</license>
 
-  <!-- 构建工具依赖 -->
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- C++ Action Server 的依赖 -->
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>moveit_ros_planning_interface</depend>
 
-  <!-- Python Action Clients 的依赖 -->
   <depend>rclpy</depend>
-  <depend>tf2_ros_py</depend> <!-- 为 Python 脚本提供 tf_transformations -->
+  <depend>tf2_ros_py</depend>
 
-  <!-- Action 定义 (*.action) 所需的消息类型依赖 -->
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>   
   <depend>geometric_shapes</depend>
-  <depend>yaml_cpp_vendor</depend> <!--new-->
+  <depend>yaml_cpp_vendor</depend>
 
-  <!-- 从 .action 文件生成接口所需的依赖 -->
   <build_depend>rosidl_default_generators</build_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>
 
-  <!-- 测试依赖 -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

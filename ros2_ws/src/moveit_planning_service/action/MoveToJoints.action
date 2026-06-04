@@ -1,8 +1,8 @@
-# Goal: 定义目标关节状态
+# Goal
 sensor_msgs/JointState target_joints
 ---
-# Result: 定义执行结果
+# Result
 bool success
 string message
 ---
-# Feedback: 定义执行过程中的反馈 (可选，这里我们暂时不用)
+# Feedback
