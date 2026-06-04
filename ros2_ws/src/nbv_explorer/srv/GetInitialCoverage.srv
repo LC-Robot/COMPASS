@@ -2,4 +2,4 @@
 # The service will calculate coverage in the pre-computed robot static bounding box.
 ---
 # Response part
-float64 coverage_ratio  # 已知(自由+占据)体素的比例 (0.0 to 1.0)
+float64 coverage_ratio

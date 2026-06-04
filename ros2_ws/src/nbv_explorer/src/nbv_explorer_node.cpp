@@ -1,6 +1,3 @@
-// ==========================================================
-// ================= ROS 2核心与消息类型 =====================
-// ==========================================================
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -10,17 +7,11 @@
 #include <octomap_msgs/msg/octomap.hpp>
 #include <std_msgs/msg/float64.hpp>
 
-// ==========================================================
-// =================== 库和API转换 ==========================
-// ==========================================================
 #include <octomap_msgs/conversions.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-// ==========================================================
-// =================== 第三方库 (不变) =======================
-// ==========================================================
 #include <octomap/octomap.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -29,52 +20,35 @@
 #include <pcl/common/centroid.h>
 #include <Eigen/Geometry>
 
-// ==========================================================
-// ==================== MoveIt (使用.hpp) ====================
-// ==========================================================
 #include <moveit/robot_model_loader/robot_model_loader.hpp>
 #include <moveit/robot_state/robot_state.hpp>
 #include <moveit/planning_scene/planning_scene.hpp>
 
-// ==========================================================
-// ==================== C++ 标准库 ==========================
-// ==========================================================
 #include <mutex>
 #include <chrono>
 #include <random>
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include <filesystem> // ROS 2 更改: 不再使用boost
+#include <filesystem>
 #include <cstdlib>
 
-// ==========================================================
-// =================== 自定义服务接口 ========================
-// ==========================================================
 #include "nbv_explorer/srv/get_nbv.hpp"
 #include "nbv_explorer/srv/get_initial_coverage.hpp"
 #include "nbv_explorer/srv/update_weights.hpp"
 
-// ==========================================================
-// ====================== 简化声明 ==========================
-// ==========================================================
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 namespace fs = std::filesystem;
 
 
-// ######################################################################################
-// ############################# VIEWPOINT STRUCT #######################################
-// ######################################################################################
 struct Viewpoint {
     geometry_msgs::msg::Pose pose;
     double gain;
 };
 
-// ######################################################################################
-// ############################# STATISTICS MANAGER CLASS ###############################
-// ######################################################################################
+
 class StatisticsManager {
 public:
     StatisticsManager(rclcpp::Node* node_ptr, int _id, int _level, int _scene) 
@@ -273,9 +247,6 @@ private:
 };
 
 
-// ######################################################################################
-// ############################### RRT EXPLORER SERVER CLASS ############################
-// ######################################################################################
 struct RRTNode {
     int id;
     geometry_msgs::msg::Pose pose;
@@ -297,7 +268,6 @@ public:
     {
         RCLCPP_INFO(this->get_logger(), "Initializing NBV Explorer Node...");
         
-        // 参数声明和获取
         this->declare_parameter<std::string>("world_frame", "panda_link0");
         this->declare_parameter<std::string>("planning_group", "panda_arm");
         this->declare_parameter<std::string>("camera_link_name", "realsense_camera_world");
@@ -354,8 +324,6 @@ public:
         this->get_parameter("level", level);
         this->get_parameter("scene", scene);
 
-        // --- 2. 【修改】在构造函数中初始化硬编码的变换矩阵 ---
-        // 变换 1: T_link8_camera (从 panda_link8 到 realsense_camera)  Tlc
         T_link8_camera_ = Eigen::Isometry3d::Identity();
         T_link8_camera_.matrix()(0, 0) = 0.707; T_link8_camera_.matrix()(0, 1) = -0.707; T_link8_camera_.matrix()(0, 2) = 0.0;
         T_link8_camera_.matrix()(1, 0) = 0.707; T_link8_camera_.matrix()(1, 1) = 0.707;  T_link8_camera_.matrix()(1, 2) = 0.0;
@@ -363,7 +331,6 @@ public:
         T_link8_camera_.translation() = Eigen::Vector3d(0.035, -0.035, 0.050);
         RCLCPP_INFO(this->get_logger(), "Hardcoded link8->camera transform initialized.");
         
-        // 变换 2: T_camera_world_to_camera (从 realsense_camera_world 到 realsense_camera)
         T_camera_world_to_camera_ = Eigen::Isometry3d::Identity();
         Eigen::Matrix3d rotation_matrix;
         rotation_matrix << 0.0, 0.0, 1.0,
@@ -418,11 +385,10 @@ public:
     }
 
 private:
-    // --- 服务回调函数 ---
     void getNBVCallback(const std::shared_ptr<nbv_explorer::srv::GetNBV::Request> req,
                         std::shared_ptr<nbv_explorer::srv::GetNBV::Response> res)
     {
-        (void)req; // 避免未使用参数警告
+        (void)req;
         if (!map_received_) {
             RCLCPP_ERROR(this->get_logger(), "Cannot provide NBV: No OctoMap has been received yet.");
             res->success = false;
@@ -537,7 +503,6 @@ private:
         res->success = true;
     }
     
-    // --- 订阅回调函数 ---
     void octomapCallback(const octomap_msgs::msg::Octomap::SharedPtr msg) {
         std::lock_guard<std::mutex> lock(octomap_mutex_);
         octomap::AbstractOcTree* tree = octomap_msgs::fullMsgToMap(*msg);
@@ -583,13 +548,11 @@ private:
         }
     }
 
-    // --- 函数声明 ---
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> findAndClusterFrontiers();
     std::vector<Viewpoint> generateAndFilterViewpoints(const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& clusters);
     Viewpoint evaluateViewpoints(std::vector<Viewpoint>& viewpoints);
     void calculateInitialPoseBoundingBox();
 
-    // --- 成员变量 ---
     rclcpp::Subscription<octomap_msgs::msg::Octomap>::SharedPtr octomap_sub_;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr target_sub_;
@@ -656,7 +619,6 @@ private:
     Eigen::Isometry3d T_camera_world_to_camera_;
 };
 
-// --- 核心算法函数 ---
 std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> RRTExplorerServer::findAndClusterFrontiers() {
     pcl::PointCloud<pcl::PointXYZ>::Ptr frontiers(new pcl::PointCloud<pcl::PointXYZ>);
     std::lock_guard<std::mutex> lock(octomap_mutex_);
@@ -742,9 +704,8 @@ std::vector<Viewpoint> RRTExplorerServer::generateAndFilterViewpoints(
     raw_viewpoints_msg->header.frame_id = world_frame_;
 
     moveit::core::RobotState seed_state = planning_scene_->getCurrentState();
-    const std::string moveit_ik_frame = "panda_link8"; // 明确定义IK求解的末端执行器
+    const std::string moveit_ik_frame = "panda_link8";
     
-    // 假设机器人基座在世界坐标系中的偏移
     octomap::point3d robot_base_center(0.3, 0.0, 0.0);
 
     for (const auto& cluster : clusters) {
@@ -755,7 +716,6 @@ std::vector<Viewpoint> RRTExplorerServer::generateAndFilterViewpoints(
         octomap::point3d cluster_center(centroid[0], centroid[1], centroid[2]);
 
         for (int i = 0; i < samples_per_cluster_; ++i) {
-            // 1. 在“视点空间”中生成一个候选的相机位姿
             double phi = acos(1 - 2 * uniform_dist_(random_generator_));
             double theta = 2 * M_PI * uniform_dist_(random_generator_);
             
@@ -773,7 +733,6 @@ std::vector<Viewpoint> RRTExplorerServer::generateAndFilterViewpoints(
 
             raw_viewpoints_msg->poses.push_back(candidate_camera_pose);
 
-            // 2. 对生成的相机位姿进行初步过滤 (边界、高度等)
             if (candidate_camera_pose.position.z < min_bound_z_ || candidate_camera_pose.position.z > max_bound_z_ ||
                 candidate_camera_pose.position.x < min_bound_x_ || candidate_camera_pose.position.x > max_bound_x_ ||
                 candidate_camera_pose.position.y < min_bound_y_ || candidate_camera_pose.position.y > max_bound_y_)
@@ -781,28 +740,23 @@ std::vector<Viewpoint> RRTExplorerServer::generateAndFilterViewpoints(
                 continue;
             }
 
-            // 【核心变换】将相机的目标位姿转换为末端执行器 (link8) 的目标位姿
             Eigen::Isometry3d T_world_camera_world_goal;
             tf2::fromMsg(candidate_camera_pose, T_world_camera_world_goal);
 
-            // 应用您已经验证过的、完全正确的变换链
             Eigen::Isometry3d T_world_link8_goal = T_world_camera_world_goal * T_camera_world_to_camera_ * T_link8_camera_.inverse();
 
             geometry_msgs::msg::Pose ik_target_pose_for_link8 = tf2::toMsg(T_world_link8_goal);
 
 
-            // 4. 使用为 link8 计算出的正确目标位姿和IK帧进行运动学求解与碰撞检测
             if (seed_state.setFromIK(joint_model_group_, ik_target_pose_for_link8, moveit_ik_frame, 0.1)) 
             {
                 if (!planning_scene_->isStateColliding(seed_state, joint_model_group_->getName())) {
-                    // 5. 如果验证通过，存储的是原始的、有意义的“相机视点位姿”
                     valid_viewpoints.push_back({candidate_camera_pose, 0.0});
                 }
             }
         }
     }
 
-    // 发布所有原始采样的视点和通过验证的候选视点以供调试
     raw_viewpoints_msg->header.stamp = this->get_clock()->now();
     raw_viewpoints_pub_->publish(std::move(raw_viewpoints_msg));
 
@@ -908,9 +862,6 @@ void RRTExplorerServer::calculateInitialPoseBoundingBox() {
 }
 
 
-// ######################################################################################
-// ##################################### MAIN ###########################################
-// ######################################################################################
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<RRTExplorerServer>();

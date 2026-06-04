@@ -9,7 +9,6 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- 依赖: ROS 2核心与消息 -->
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -17,17 +16,14 @@
   <depend>visualization_msgs</depend>
   <depend>octomap_msgs</depend>
 
-  <!-- 依赖: MoveIt -->
   <depend>moveit_core</depend>
   <depend>moveit_ros_planning_interface</depend>
   
-  <!-- 依赖: 感知与TF -->
   <depend>octomap_ros</depend>
   <depend>pcl_conversions</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_eigen</depend>
 
-  <!-- 依赖: 自定义服务生成 -->
   <build_depend>rosidl_default_generators</build_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>

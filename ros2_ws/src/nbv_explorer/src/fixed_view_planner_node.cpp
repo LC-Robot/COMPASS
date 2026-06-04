@@ -1,6 +1,3 @@
-// ==========================================================
-// ================= ROS 2核心与消息类型 =====================
-// ==========================================================
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -10,17 +7,11 @@
 #include <octomap_msgs/msg/octomap.hpp>
 #include <std_msgs/msg/float64.hpp>
 
-// ==========================================================
-// =================== 库和API转换 ==========================
-// ==========================================================
 #include <octomap_msgs/conversions.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-// ==========================================================
-// =================== 第三方库 (不变) =======================
-// ==========================================================
 #include <octomap/octomap.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -29,44 +20,29 @@
 #include <pcl/common/centroid.h>
 #include <Eigen/Geometry>
 
-// ==========================================================
-// ==================== MoveIt (使用.hpp) ====================
-// ==========================================================
 #include <moveit/robot_model_loader/robot_model_loader.hpp>
 #include <moveit/robot_state/robot_state.hpp>
 #include <moveit/planning_scene/planning_scene.hpp>
 
-// ==========================================================
-// ==================== C++ 标准库 ==========================
-// ==========================================================
 #include <mutex>
 #include <chrono>
 #include <random>
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include <filesystem> // ROS 2 更改: 不再使用boost
+#include <filesystem>
 #include <cstdlib>
 
-// ==========================================================
-// =================== 自定义服务接口 ========================
-// ==========================================================
 #include "nbv_explorer/srv/get_nbv.hpp"
 #include "nbv_explorer/srv/get_initial_coverage.hpp"
 #include "nbv_explorer/srv/update_weights.hpp"
 
-// ==========================================================
-// ====================== 简化声明 ==========================
-// ==========================================================
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 namespace fs = std::filesystem;
 
 
-// ######################################################################################
-// ############################# STATISTICS MANAGER CLASS ###############################
-// ######################################################################################
 class StatisticsManager {
 public:
     StatisticsManager(rclcpp::Node* node_ptr, int _id, int _level, int _scene) 
@@ -277,18 +253,15 @@ struct RRTNode {
 
 class RRTExplorerServer : public rclcpp::Node {
 public:
-    // 构造函数现在非常简单，只调用基类构造函数
     RRTExplorerServer() : Node("fixed_view_planner_node"), random_generator_(std::random_device{}())
     {
         RCLCPP_INFO(this->get_logger(), "Constructing Fixed View Planner Node...");
     }
 
-    // 新增的init()方法，用于执行所有复杂的初始化
     void init()
     {
         RCLCPP_INFO(this->get_logger(), "Initializing Fixed View Planner Node...");
         
-        // --- 1. 参数声明和获取 ---
         this->declare_parameter<std::string>("world_frame", "panda_link0");
         this->declare_parameter<std::string>("planning_group", "panda_arm");
         this->declare_parameter<std::string>("camera_link_name", "realsense_camera_world");
@@ -345,7 +318,6 @@ public:
 
         uniform_dist_ = std::uniform_real_distribution<double>(0.0, 1.0);
 
-        // --- 2. MoveIt 初始化 (现在可以安全使用 shared_from_this) ---
         robot_model_loader_ = std::make_shared<robot_model_loader::RobotModelLoader>(shared_from_this(), "robot_description");
         robot_model_ = robot_model_loader_->getModel();
         planning_scene_ = std::make_shared<planning_scene::PlanningScene>(robot_model_);
@@ -356,14 +328,12 @@ public:
         }
 
         if (use_static_robot_box_) {
-            // 使用定时器以确保robot_description已加载并传播
             timer_ = this->create_wall_timer(500ms, [this]() {
-                this->timer_->cancel(); // 只执行一次
+                this->timer_->cancel();
                 this->calculateInitialPoseBoundingBox();
             });
         }
 
-        // --- 3. 定义预编程的视点列表 ---
         predefined_viewpoints_.push_back({ {0.5, 0.0, 0.6},  {0, M_PI/4, M_PI} });
         predefined_viewpoints_.push_back({ {0.35, 0.35, 0.6}, {0, M_PI/4, -3*M_PI/4} });
         predefined_viewpoints_.push_back({ {0.0, 0.5, 0.6},  {0, M_PI/4, -M_PI/2} });
@@ -372,7 +342,6 @@ public:
         predefined_viewpoints_.push_back({ {0.4, 0.0, 0.8},  {0, M_PI/2, M_PI} });
         predefined_viewpoints_.push_back({ {0.4, 0.0, 0.3},  {0, 0, M_PI} });
 
-        // --- 4. 初始化ROS 2 通信接口 ---
         octomap_sub_ = this->create_subscription<octomap_msgs::msg::Octomap>(
             "/octomap_full", 1, std::bind(&RRTExplorerServer::octomapCallback, this, _1));
         joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -390,19 +359,17 @@ public:
         frontier_points_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/frontier_points", 1);
         frontier_clusters_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/frontier_clusters", 1);
 
-        // --- 5. 初始化统计管理器 ---
         stats_manager_ = std::make_shared<StatisticsManager>(this, run_id, level, scene);
         
         RCLCPP_INFO(this->get_logger(), "Fixed View Planner Server initialized. Ready to provide NBVs.");
     }
 
 private:
-    // --- 成员函数 ---
 
     void getNBVCallback(const std::shared_ptr<nbv_explorer::srv::GetNBV::Request> req,
                         std::shared_ptr<nbv_explorer::srv::GetNBV::Response> res) 
     {
-        (void)req; // 避免未使用参数警告
+        (void)req;
         if (current_waypoint_index_ >= predefined_viewpoints_.size()) {
             RCLCPP_WARN(this->get_logger(), "All pre-programmed viewpoints have been served. Exploration finished.");
             res->success = false;
@@ -554,7 +521,6 @@ private:
                 res->coverage_ratio * 100.0, known_voxels, total_voxels);
     }
 
-    // --- 成员变量 ---
 
     rclcpp::Subscription<octomap_msgs::msg::Octomap>::SharedPtr octomap_sub_;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
@@ -619,19 +585,13 @@ private:
 };
 
 
-// ######################################################################################
-// ##################################### MAIN ###########################################
-// ######################################################################################
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     
-    // 1. 创建节点的 shared_ptr
     auto node = std::make_shared<RRTExplorerServer>();
     
-    // 2. 【核心修复】在节点完全构建后，调用 init() 方法
     node->init();
     
-    // 3. 创建执行器并 spin 节点
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(node);
     executor.spin();
