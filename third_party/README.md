@@ -10,5 +10,5 @@ Use `../dependencies.repos` to fetch the source dependencies into a separate wor
 
 GraspNet Baseline is an exception at runtime: `grasp_server_node.py` expects a
 local checkout inside the `detect_graspnet` package directory so its legacy
-imports resolve. Keep that checkout local and ignored by git. See
-`../docs/graspnet_setup.md`.
+imports resolve. Keep that checkout local and ignored by git. See the
+Installation section in `../README.md`.

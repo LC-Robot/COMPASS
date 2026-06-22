@@ -35,7 +35,7 @@ fi
 
 if [[ ! -f "$MOVEIT_SETUP" ]]; then
   echo "Missing MoveIt setup file: $MOVEIT_SETUP" >&2
-  echo "Build or install MoveIt first. See docs/moveit_source_build.md" >&2
+  echo "Build or install MoveIt first. See the Installation section in README.md." >&2
   exit 1
 fi
 
