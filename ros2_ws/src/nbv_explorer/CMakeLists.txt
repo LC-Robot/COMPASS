@@ -27,29 +27,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 add_executable(rrt_explorer_node src/rrt_explorer_node.cpp)
-add_executable(fixed_view_planner_node src/fixed_view_planner_node.cpp)
-add_executable(nbv_explorer_node src/nbv_explorer_node.cpp)
-add_executable(geo_rrt_explorer_node src/geo_rrt_explorer_node.cpp)
 
 ament_target_dependencies(rrt_explorer_node
-  rclcpp std_msgs geometry_msgs sensor_msgs visualization_msgs octomap_msgs
-  moveit_core moveit_ros_planning_interface octomap_ros
-  pcl_conversions tf2_ros tf2_eigen
-)
-
-ament_target_dependencies(fixed_view_planner_node
-  rclcpp std_msgs geometry_msgs sensor_msgs visualization_msgs octomap_msgs
-  moveit_core moveit_ros_planning_interface octomap_ros
-  pcl_conversions tf2_ros tf2_eigen
-)
-
-ament_target_dependencies(nbv_explorer_node
-  rclcpp std_msgs geometry_msgs sensor_msgs visualization_msgs octomap_msgs
-  moveit_core moveit_ros_planning_interface octomap_ros
-  pcl_conversions tf2_ros tf2_eigen
-)
-
-ament_target_dependencies(geo_rrt_explorer_node
   rclcpp std_msgs geometry_msgs sensor_msgs visualization_msgs octomap_msgs
   moveit_core moveit_ros_planning_interface octomap_ros
   pcl_conversions tf2_ros tf2_eigen
@@ -58,27 +37,6 @@ ament_target_dependencies(geo_rrt_explorer_node
 rosidl_get_typesupport_target(idl_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 target_link_libraries(rrt_explorer_node
-    ${idl_target}
-    ${octomap_LIBRARIES}
-    ${PCL_LIBRARIES}
-    Eigen3::Eigen
-)
-
-target_link_libraries(fixed_view_planner_node
-    ${idl_target}
-    ${octomap_LIBRARIES}
-    ${PCL_LIBRARIES}
-    Eigen3::Eigen
-)
-
-target_link_libraries(nbv_explorer_node
-    ${idl_target}
-    ${octomap_LIBRARIES}
-    ${PCL_LIBRARIES}
-    Eigen3::Eigen
-)
-
-target_link_libraries(geo_rrt_explorer_node
     ${idl_target}
     ${octomap_LIBRARIES}
     ${PCL_LIBRARIES}
@@ -98,9 +56,6 @@ install(
 
 install(TARGETS
   rrt_explorer_node
-  fixed_view_planner_node
-  nbv_explorer_node
-  geo_rrt_explorer_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

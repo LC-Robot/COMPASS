@@ -9,7 +9,6 @@ ISAAC_PYTHON="${ISAAC_PYTHON:-/home/le/anaconda3/envs/env_isaaclab/bin/python}"
 GRASPNET_ROOT="${GRASPNET_ROOT:-/home/le/ros_workspace/COMPASS/ros2_ws/src/detect_graspnet}"
 GRASPNET_CONDA_ENV="${GRASPNET_CONDA_ENV:-graspnet-test}"
 
-METHOD="${METHOD:-RRT}"
 LEVEL="${LEVEL:-1}"
 SCENE="${SCENE:-1}"
 RUN_ID="${RUN_ID:-1}"
@@ -68,7 +67,7 @@ cleanup() {
 trap cleanup EXIT SIGINT SIGTERM
 
 echo "Starting COMPASS single-scene run"
-echo "  method=$METHOD level=$LEVEL scene=$SCENE run_id=$RUN_ID"
+echo "  level=$LEVEL scene=$SCENE run_id=$RUN_ID"
 echo "  hardware=$ROS2_CONTROL_HARDWARE_TYPE use_rviz=$USE_RVIZ"
 echo "  scene_config=$COLLISION_YAML_PATH"
 echo "  compass=$COMPASS_ROOT"
@@ -85,7 +84,6 @@ echo "  moveit=$MOVEIT_SETUP"
   '$ISAAC_PYTHON' '$COMPASS_ROOT/ros2_ws/src/isaac_panda/launch/isaac_moveit.py' \
     --ros-args \
     -p scene_yaml_path:='$COLLISION_YAML_PATH' \
-    -p method:='$METHOD' \
     -p level:='$LEVEL' \
     -p scene:='$SCENE' \
     -p run_id:='$RUN_ID'
@@ -103,7 +101,6 @@ sleep 30
   source '$COMPASS_ROS_SETUP'
   cd '$COMPASS_ROOT/ros2_ws'
   ros2 launch exploration_decision exploration.launch.py \
-    method:='$METHOD' \
     run_id:='$RUN_ID' \
     level:='$LEVEL' \
     scene:='$SCENE' \

@@ -38,16 +38,6 @@ def get_declared_parameter(node, name, default_value):
     return value
 
 
-def method_to_folder(method):
-    method_map = {
-        "RRT": "our_rrt",
-        "NBV": "single_nbv",
-        "FV": "fixed_view",
-        "GEO_RRT": "geo_rrt",
-    }
-    return method_map.get(method, method.lower())
-
-
 class GraspSignalSubscriber(Node):
     """Subscribe to the MoveIt grasp completion signal inside Isaac Sim."""
     def __init__(self, context=None):
@@ -176,7 +166,6 @@ try:
 
     ros_subscriber_node = GraspSignalSubscriber(context=ros_context)
 
-    method = get_declared_parameter(ros_subscriber_node, "method", "RRT")
     level = get_declared_parameter(ros_subscriber_node, "level", 1)
     scene = get_declared_parameter(ros_subscriber_node, "scene", 1)
     run_id = get_declared_parameter(ros_subscriber_node, "run_id", 1)
@@ -188,13 +177,12 @@ try:
     )
 
     experiments_root = Path(os.environ.get("COMPASS_EXPERIMENTS_DIR", COMPASS_ROOT / "experiments"))
-    result_path = experiments_root / method_to_folder(method) / f"level{level}" / f"scene_{scene}" / f"run_{run_id}"
+    result_path = experiments_root / "our_rrt" / f"level{level}" / f"scene_{scene}" / f"run_{run_id}"
     result_path.mkdir(parents=True, exist_ok=True)
 
     ros_subscriber_node.get_logger().info("=================================================")
     ros_subscriber_node.get_logger().info("Isaac Sim parameters:")
     ros_subscriber_node.get_logger().info(f"  - scene_yaml_path: {scene_yaml_path}")
-    ros_subscriber_node.get_logger().info(f"  - method: {method}")
     ros_subscriber_node.get_logger().info(f"  - level: {level}")
     ros_subscriber_node.get_logger().info(f"  - scene: {scene}")
     ros_subscriber_node.get_logger().info(f"  - run_id: {run_id}")
@@ -436,7 +424,6 @@ try:
             try:
                 with open(result_file_path, "w", encoding="utf-8") as f:
                     f.write(f"success: {grasp_success}\n")
-                    f.write(f"method: {method}\n")
                     f.write(f"level: {level}\n")
                     f.write(f"scene: {scene}\n")
                     f.write(f"run_id: {run_id}\n")

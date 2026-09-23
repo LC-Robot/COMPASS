@@ -33,7 +33,6 @@ class ExplorationCoordinator(Node):
         self.final_grasp_pose = None
         self.final_grasp_score = None
 
-        self.declare_parameter("method_name", "default")
         self.declare_parameter("run_id", 0)
         self.declare_parameter("level", 1)
         self.declare_parameter("scene", 1)
@@ -43,7 +42,6 @@ class ExplorationCoordinator(Node):
         self.declare_parameter("movement_timeout", 20.0)
         self.declare_parameter("grasp_wait_timeout", 15.0)
 
-        self.method_name = self.get_parameter("method_name").get_parameter_value().string_value
         self.run_id = self.get_parameter("run_id").get_parameter_value().integer_value
         self.level = self.get_parameter("level").get_parameter_value().integer_value
         self.scene = self.get_parameter("scene").get_parameter_value().integer_value
@@ -55,9 +53,7 @@ class ExplorationCoordinator(Node):
 
         compass_root = os.environ.get("COMPASS_ROOT", os.getcwd())
         base_path = os.environ.get("COMPASS_EXPERIMENTS_DIR", os.path.join(compass_root, "experiments"))
-        method_map = {"RRT": "our_rrt", "NBV": "single_nbv", "FV": "fixed_view", "GEO_RRT": "geo_rrt"}
-        method_folder = method_map.get(self.method_name, "default")
-        self.result_path = f"{base_path}/{method_folder}/level{self.level}/scene_{self.scene}/run_{self.run_id}"
+        self.result_path = f"{base_path}/our_rrt/level{self.level}/scene_{self.scene}/run_{self.run_id}"
         self.get_logger().info(f"Result path set to: {self.result_path}")
         
         self.STATE_INITIALIZING = "INITIALIZING"

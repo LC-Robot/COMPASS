@@ -180,7 +180,7 @@ cd ~/ros_workspace/COMPASS
 Useful optional parameters:
 
 ```bash
-METHOD=RRT LEVEL=1 SCENE=1 RUN_ID=1 ./scripts/start_exploration_single_test.sh
+LEVEL=1 SCENE=1 RUN_ID=1 ./scripts/start_exploration_single_test.sh
 ```
 
 If YOLO-World reports mixed CPU/CUDA tensors in the GraspNet conda

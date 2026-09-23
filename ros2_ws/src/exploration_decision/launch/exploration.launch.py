@@ -1,9 +1,9 @@
 import os
 import yaml
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -55,7 +55,6 @@ def moveit_params_for_launch(moveit_config):
 def load_nodes_based_on_yaml(context, *args, **kwargs):
     """Create planner nodes that depend on launch-time scene YAML values."""
     collision_objects_yaml_path = LaunchConfiguration('collision_objects_yaml_path').perform(context)
-    method = LaunchConfiguration('method').perform(context)
     run_id = int(LaunchConfiguration('run_id').perform(context))
     level = int(LaunchConfiguration('level').perform(context))
     scene = int(LaunchConfiguration('scene').perform(context))
@@ -100,60 +99,16 @@ def load_nodes_based_on_yaml(context, *args, **kwargs):
         **target_params
     }
     
-    planner_nodes = GroupAction(
-        actions=[
-            Node(
-                package='nbv_explorer', 
-                executable='rrt_explorer_node', 
-                name='rrt_planner', 
-                output='screen',
-                condition=IfCondition(PythonExpression([f"'{method}' == 'RRT'"])),
-                parameters=[
-                    common_planner_params,
-                    moveit_config.robot_description, 
-                    moveit_config.robot_description_semantic, 
-                    moveit_config.robot_description_kinematics
-                ]
-            ),
-            Node(
-                package='nbv_explorer', 
-                executable='fixed_view_planner_node', 
-                name='fixed_view_planner',
-                output='screen',
-                condition=IfCondition(PythonExpression([f"'{method}' == 'FV'"])),
-                parameters=[
-                    common_planner_params,
-                    moveit_config.robot_description, 
-                    moveit_config.robot_description_semantic, 
-                    moveit_config.robot_description_kinematics
-                ]
-            ),
-            Node(
-                package='nbv_explorer', 
-                executable='nbv_explorer_node', 
-                name='nbv_planner',
-                output='screen',
-                condition=IfCondition(PythonExpression([f"'{method}' == 'NBV'"])),
-                parameters=[
-                    common_planner_params,
-                    moveit_config.robot_description, 
-                    moveit_config.robot_description_semantic, 
-                    moveit_config.robot_description_kinematics
-                ]
-            ),
-            Node(
-                package='nbv_explorer', 
-                executable='geo_rrt_explorer_node',
-                name='geo_rrt_planner',            
-                output='screen',
-                condition=IfCondition(PythonExpression([f"'{method}' == 'GEO_RRT'"])),
-                parameters=[
-                    common_planner_params,
-                    moveit_config.robot_description, 
-                    moveit_config.robot_description_semantic, 
-                    moveit_config.robot_description_kinematics
-                ]
-            ),
+    planner_node = Node(
+        package='nbv_explorer',
+        executable='rrt_explorer_node',
+        name='rrt_planner',
+        output='screen',
+        parameters=[
+            common_planner_params,
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics
         ]
     )
     
@@ -165,7 +120,7 @@ def load_nodes_based_on_yaml(context, *args, **kwargs):
         parameters=[target_params]
     )
 
-    return [planner_nodes, guide_publisher_node]
+    return [planner_node, guide_publisher_node]
 
 
 def generate_launch_description():
@@ -174,7 +129,6 @@ def generate_launch_description():
     default_collision_objects_yaml_path = os.path.join(compass_root, "config", "level1", "1.yaml")
     
     declared_arguments = [
-        DeclareLaunchArgument('method', default_value='RRT'),
         DeclareLaunchArgument('run_id', default_value='3'),
         DeclareLaunchArgument('level', default_value='1'),
         DeclareLaunchArgument('scene', default_value='1'),
@@ -235,7 +189,7 @@ def generate_launch_description():
     )
     exploration_coordinator_node = Node(
         package='exploration_decision', executable='exploration_coordinator', name='exploration_coordinator', output='screen',
-        parameters=[{'method_name': LaunchConfiguration('method'), 'run_id': LaunchConfiguration('run_id'), 'level': LaunchConfiguration('level'), 'scene': LaunchConfiguration('scene')}]
+        parameters=[{'run_id': LaunchConfiguration('run_id'), 'level': LaunchConfiguration('level'), 'scene': LaunchConfiguration('scene')}]
     )
 
     load_dynamic_nodes_action = OpaqueFunction(
